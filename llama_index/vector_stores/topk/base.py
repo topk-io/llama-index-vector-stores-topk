@@ -75,8 +75,9 @@ Metric = Literal["cosine", "dot_product", "euclidean"]
 MAX_QUERY_RESULTS = 10_000
 """TopK returns at most this many results from a single query."""
 
-MAX_SEMANTIC_TEXT_CHARS = 4096
-"""Longest value a `semantic_index()` text field accepts."""
+MAX_SEMANTIC_TEXT_CHARS = 32_768
+"""Longest value a `semantic_index()` text field accepts (TopK rejects longer
+values with `TextTooLong { max_length: 32768 }`)."""
 
 MAX_REQUEST_BYTES = 4 * 1024 * 1024
 """Target upsert payload size, well under TopK's 8MB request limit."""
@@ -134,7 +135,7 @@ class TopKTextIndex(str, Enum):
     """Index created on the text field of a new collection."""
 
     SEMANTIC = "semantic"
-    """`semantic_index()`: server-side embeddings and BM25 (max 4,096 chars)."""
+    """`semantic_index()`: server-side embeddings and BM25 (max 32,768 chars)."""
     KEYWORD = "keyword"
     """`keyword_index()`: BM25 only, no length cap beyond the document size."""
     NONE = "none"
@@ -214,7 +215,7 @@ class TopKVectorStore(BasePydanticVectorStore):
             `FastEmbedMultiVectorEmbedding`), scored with MaxSim.
         text_index: Index on the text field of a new collection:
             `"semantic"` (default: server-side embeddings and BM25, values up
-            to 4,096 characters), `"keyword"` (BM25 only) or `"none"`.
+            to 32,768 characters), `"keyword"` (BM25 only) or `"none"`.
         hybrid_weights: Default weights for hybrid search, keyed by signal
             (`semantic`, `keyword`, `dense`, `sparse`, `multi_vector`).
             Every configured signal defaults to 1.0; 0 removes a signal.
@@ -247,7 +248,7 @@ class TopKVectorStore(BasePydanticVectorStore):
             [Document(text="TopK embeds text on the server.")],
             storage_context=StorageContext.from_defaults(vector_store=vector_store),
             embed_model=TopKServerSideEmbedding(),
-            # Semantic text values are capped at 4,096 characters.
+            # Chunk documents into passages that work well for retrieval.
             transformations=[SentenceSplitter(chunk_size=512)],
         )
         retriever = index.as_retriever(vector_store_query_mode="hybrid")

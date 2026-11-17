@@ -4,6 +4,11 @@ on:
   release:
     types: [published]
 
+env:
+  # uv hardlinks packages from its cache by default, and nltk (used by
+  # llama-index-core) refuses to open multiply-linked data files.
+  UV_LINK_MODE: copy
+
 jobs:
   publish:
     runs-on: ubuntu-latest

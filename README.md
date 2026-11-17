@@ -50,7 +50,7 @@ index = VectorStoreIndex.from_documents(
     ],
     storage_context=StorageContext.from_defaults(vector_store=vector_store),
     embed_model=TopKServerSideEmbedding(),
-    transformations=[SentenceSplitter(chunk_size=512)],  # semantic text values are capped at 4,096 characters
+    transformations=[SentenceSplitter(chunk_size=512)],  # passage-sized chunks retrieve best
 )
 
 retriever = index.as_retriever(similarity_top_k=2)
@@ -111,9 +111,19 @@ See the [example notebook](docs/TopKDemo.ipynb) for every feature, with runnable
 
 ## Notes
 
-- A value in a `semantic_index()` text field can be at most 4,096 characters. Chunk documents (for example with `SentenceSplitter(chunk_size=512)`) or create the store with `text_index="keyword"`.
+- A value in a `semantic_index()` text field can be at most 32,768 characters. Longer nodes are rejected before anything is written; chunk documents (for example with `SentenceSplitter(chunk_size=512)`, which also gives more precise retrieval) or create the store with `text_index="keyword"`.
 - A query returns at most 10,000 results.
 - Don't delete and immediately recreate a collection under the same name. For about a minute, writes to it can be lost.
+
+## Development
+
+```bash
+export UV_LINK_MODE=copy  # nltk, used by llama-index-core, refuses hardlinked data files
+uv sync --group dev
+uv run make lint
+uv run make test
+TOPK_API_KEY=... uv run make integration_test  # live tests; they delete only collections they create
+```
 
 ## Links
 

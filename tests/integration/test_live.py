@@ -521,3 +521,22 @@ async def test_async(new_collection_name: Callable[[str], str], region: str) -> 
     while vs.count() and time.monotonic() - start < 30:
         time.sleep(1)
     assert vs.count() == 0
+
+
+def test_semantic_text_length_limit(
+    new_collection_name: Callable[[str], str], region: str
+) -> None:
+    # TopK's semantic index accepts values up to 32,768 characters, and text
+    # anywhere in a long value is searchable.
+    vs = TopKVectorStore(collection_name=new_collection_name("long"), region=region)
+    filler = "Quarterly revenue grew while costs stayed flat. "
+    body = (filler * 700)[:30_000]
+    body = (
+        body[:20_000] + " Penguins live in Antarctica and eat krill. " + body[20_000:]
+    )
+    vs.add([TextNode(id_="long", text=body[:32_768])])
+    vs.add([TextNode(id_="short", text=filler * 3)])
+    result = vs.query(q("birds that eat krill in the cold", k=1))
+    assert node_ids(result) == ["long"]
+    with pytest.raises(ValueError, match="32768"):
+        vs.add([TextNode(id_="too-long", text="x" * 32_769)])

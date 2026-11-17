@@ -227,9 +227,9 @@ def test_add_computes_sparse_and_multi_vectors(client) -> None:
 def test_add_rejects_text_too_long_for_semantic_index(client) -> None:
     store = make_store(client)
     with pytest.raises(ValueError, match="SentenceSplitter"):
-        store.add([node("n1", "x" * 5000)])
+        store.add([node("n1", "x" * 33_000)])
     keyword = make_store(FakeClient(), text_index="keyword")
-    keyword.add([node("n1", "x" * 5000)])
+    keyword.add([node("n1", "x" * 33_000)])
 
 
 def test_add_batches_and_partitions(client) -> None:
@@ -799,8 +799,8 @@ def test_lsn_never_goes_backwards(client) -> None:
 
 def test_validation_happens_before_any_write(client) -> None:
     store = make_store(client, batch_size=1)
-    with pytest.raises(ValueError, match="4096"):
-        store.add([node("ok"), node("bad", "x" * 5000)])
+    with pytest.raises(ValueError, match="32768"):
+        store.add([node("ok"), node("bad", "x" * 33_000)])
     assert not client.all("upsert")
 
 

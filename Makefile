@@ -1,3 +1,7 @@
+# uv hardlinks packages by default; nltk (used by llama-index-core) refuses
+# multiply-linked data files, so install with copies.
+export UV_LINK_MODE ?= copy
+
 help:	## Show all Makefile targets.
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[33m%-30s\033[0m %s\n", $$1, $$2}'
 
